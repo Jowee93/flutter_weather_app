@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import '../services/location.dart';
-import 'package:http/http.dart' as http;
+import '../services/networking.dart';
+import 'location_screen.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
+
+const apiKey = 'f17e0ff5fbecbe657359f059887bc01b';
 
 class LoadingScreen extends StatefulWidget {
   @override
@@ -8,39 +12,51 @@ class LoadingScreen extends StatefulWidget {
 }
 
 class _LoadingScreenState extends State<LoadingScreen> {
+  double latitude;
+  double longitude;
+
   @override
   void initState() {
     super.initState();
-
-    getWeather();
+    getLocation();
   }
 
   void getLocation() async {
     Location location = Location();
     await location.getLocation();
 
-    print(location.latitude);
-    print(location.longitude);
-  }
+    latitude = location.latitude;
+    longitude = location.longitude;
 
-  void getWeather() async {
-    http.Response response = await http.get(
-        'https://samples.openweathermap.org/data/2.5/weather?lat=35&lon=139&appid=b6907d289e10d714a6e88b30761fae22');
+    NetworkHelper networkhelper = NetworkHelper(
+        'https://api.openweathermap.org/data/2.5/weather?lat=$latitude&lon=$longitude&units=metric&appid=$apiKey');
 
-    print(response.body);
+    var weatherData = await networkhelper.getData();
+
+    double temperature = weatherData['main']['temp'];
+    int id = weatherData['weather'][0]['id'];
+    String country = weatherData['name'];
+
+    print(temperature);
+    print(id);
+    print(country);
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) {
+        return LocationScreen(weatherData);
+      }),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
-        child: RaisedButton(
-          onPressed: () {
-            getLocation();
-          },
-          child: Text('Get Location'),
-        ),
-      ),
+          child: SpinKitDoubleBounce(
+        color: Colors.blue,
+        size: 50.0,
+      )),
     );
   }
 }
